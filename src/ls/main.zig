@@ -9,10 +9,12 @@ const stdout = std.io.getStdOut().writer();
 // may want to make a proper format first doing more params
 // -d and -r has issues with more than one dir
 
-const description = "List directory contents";
+const usage = "Usage: ls [OPTION]... [FILE]...";
+
+const description = "List information about the FILEs (the current directory by default).";
 
 const params = clap.parseParamsComptime(
-    \\--help				Display this help and exit.
+    \\<FILE>...				Path to dir, if omitted, cwd will be used.
     \\-l, --long			Use a long listing format.
     \\-R, --recursive		List subdirectories recursively.
     \\-a, --all				Do not ignore entries starting with `.'.\
@@ -21,12 +23,13 @@ const params = clap.parseParamsComptime(
     \\-1, --one				List one file per line.
     \\-h, --human-readable	With -l and -s, print sizes like 1K 234M 2G etc.			
     \\-d, --directory		List directories themselves, not their contents.
-    \\<DIR>...				Path to dir, if omitted, cwd will be used.
+    \\--help				Display this help and exit.
+	\\--version				Output verion infromation and exit
     \\
 );
 
 const parsers = .{
-    .DIR = clap.parsers.string,
+    .FILE = clap.parsers.string,
 };
 
 pub fn main() !void {
@@ -45,7 +48,10 @@ pub fn main() !void {
     defer res.deinit();
 
     if ((res.args.help != 0)) {
-        return share_utils.printHelp(std.io.getStdErr().writer(), params, description[0..]);
+        return share_utils.printHelp(std.io.getStdErr().writer(), params, .{ .usage = usage[0..], .description = description[0..] });
+    }
+    if ((res.args.version != 0)) {
+        return share_utils.printVersion(std.io.getStdErr().writer(), "ls");
     }
     var combined_flags: u8 = 0;
 
@@ -69,32 +75,20 @@ pub fn main() !void {
 }
 
 fn sortFileList(file_list_items: anytype, flags: u8) void {
-    const sort = struct {
-        fn skipLeadingDots(s: []const u8) []const u8 {
-            var i: usize = 0;
-            while (i < s.len and s[i] == '.') : (i += 1) {}
-            return s[i..];
-        }
-
+    const sort_functions = struct {
         fn sort_ascii(_: void, l: []const u8, r: []const u8) bool {
-            const stripped_l = skipLeadingDots(l);
-            const stripped_r = skipLeadingDots(r);
-
-            return std.ascii.lessThanIgnoreCase(stripped_l, stripped_r);
+            return std.ascii.lessThanIgnoreCase(std.mem.trimLeft(u8, l, "."), std.mem.trimLeft(u8, r, "."));
         }
 
         fn reverse_sort_ascii(_: void, l: []const u8, r: []const u8) bool {
-            const stripped_l = skipLeadingDots(l);
-            const stripped_r = skipLeadingDots(r);
-
-            return !std.ascii.lessThanIgnoreCase(stripped_l, stripped_r);
+            return !std.ascii.lessThanIgnoreCase(std.mem.trimLeft(u8, l, "."), std.mem.trimLeft(u8, r, "."));
         }
     };
 
     if (flags & (1 << 4) != 0) {
-        std.sort.pdq([]const u8, file_list_items, {}, sort.reverse_sort_ascii);
+        std.sort.pdq([]const u8, file_list_items, {}, sort_functions.reverse_sort_ascii);
     } else {
-        std.sort.pdq([]const u8, file_list_items, {}, sort.sort_ascii);
+        std.sort.pdq([]const u8, file_list_items, {}, sort_functions.sort_ascii);
     }
 }
 
