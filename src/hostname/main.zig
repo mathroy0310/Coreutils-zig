@@ -1,15 +1,18 @@
 const std = @import("std");
 const clap = @import("clap");
+const share_utils = @import("shared_utils");
+
+const description = "show or set the system's host name";
+
+const params = clap.parseParamsComptime(
+    \\-h, --help			Display this help and exit.
+    \\
+);
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
 
-    const params = comptime clap.parseParamsComptime(
-        \\-h, --help			Display this help and exit.
-		\\-v, --version			Display 
-        \\
-    );
     var diag = clap.Diagnostic{};
     var res = clap.parse(
         clap.Help,
@@ -23,7 +26,7 @@ pub fn main() !void {
 
     const stdout = std.io.getStdOut().writer();
     if ((res.args.help != 0)) {
-        return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
+        return share_utils.printHelp(std.io.getStdErr().writer(), params, description[0..]);
     }
     var buffer: [std.posix.HOST_NAME_MAX]u8 = undefined;
     const hostname = try std.posix.gethostname(&buffer);

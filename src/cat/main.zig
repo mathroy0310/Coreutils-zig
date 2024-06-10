@@ -13,7 +13,6 @@ const params = clap.parseParamsComptime(
 );
 
 const parsers = .{
-    .INT = clap.parsers.int(usize, 10),
     .FILE = clap.parsers.string,
 };
 
@@ -34,7 +33,6 @@ pub fn main() !void {
     };
     defer res.deinit();
 
-    const stdout = std.io.getStdOut().writer();
     if ((res.args.help != 0)) {
         return share_utils.printHelp(std.io.getStdErr().writer(), params, description[0..]);
     }
@@ -43,22 +41,23 @@ pub fn main() !void {
     const show_ends = res.args.@"show-ends" != 0;
 
     if (res.positionals.len == 0) {
-        try printFile(gpa.allocator(), std.io.getStdIn().reader(), stdout, show_line_numbers, show_ends);
+        try printFile(gpa.allocator(), std.io.getStdIn().reader(), show_line_numbers, show_ends);
     } else {
         for (res.positionals) |file_path| {
             if (std.mem.eql(u8, file_path, "-")) {
-                try printFile(gpa.allocator(), std.io.getStdIn().reader(), stdout, show_line_numbers, show_ends);
+                try printFile(gpa.allocator(), std.io.getStdIn().reader(), show_line_numbers, show_ends);
             } else {
                 var file = try std.fs.cwd().openFile(file_path, .{});
                 defer file.close();
 
-                try printFile(gpa.allocator(), file.reader(), stdout, show_line_numbers, show_ends);
+                try printFile(gpa.allocator(), file.reader(), show_line_numbers, show_ends);
             }
         }
     }
 }
 
-fn printFile(allocator: std.mem.Allocator, in_stream: anytype, out_stream: anytype, show_line_numbers: bool, show_ends: bool) !void {
+fn printFile(allocator: std.mem.Allocator, in_stream: anytype, show_line_numbers: bool, show_ends: bool) !void {
+    const out_stream = std.io.getStdOut().writer();
     var buf_reader = std.io.bufferedReader(in_stream);
     var buf_in_stream = buf_reader.reader();
 
