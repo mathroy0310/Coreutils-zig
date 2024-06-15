@@ -44,11 +44,11 @@ pub fn main() !void {
         return shared_utils.printHelp(std.io.getStdErr().writer(), params, .{ .usage = usage[0..], .description = description[0..] });
     }
     if ((res.args.version != 0)) {
-        return shared_utils.printVersion(std.io.getStdErr().writer(), "cat");
+        return shared_utils.printVersion(std.io.getStdErr().writer(), "sleep");
     }
     if (res.positionals.len == 0) {
         try stdout.print("{s}: missing operand\n", .{"sleep"});
-        try stdout.print("Try '{s} --help' for more information.\n", .{"sleep"});
+        try stdout.print("Try '{s} --help or -h' for more information.\n", .{"sleep"});
         return;
     }
 
